@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Radio Bed Player</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f9;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    h1 {
+      color: #333;
+    }
+
+    .player-container {
+      max-width: 600px;
+      width: 100%;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+    }
+
+    .drop-area {
+      border: 2px dashed #888;
+      border-radius: 10px;
+      text-align: center;
+      padding: 20px;
+      cursor: pointer;
+      margin-bottom: 20px;
+      transition: border-color 0.3s ease;
+    }
+
+    .drop-area.dragging {
+      border-color: #0056d6;
+    }
+
+    .drop-area p {
+      margin: 10px 0;
+      color: #555;
+    }
+
+    .drop-area button {
+      background-color: #0056d6;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .track-list {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .track-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 15px;
+      background: #f9f9f9;
+      border-radius: 5px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .track-item audio {
+      width: 70%;
+    }
+
+    .track-item button {
+      background-color: #ff4f4f;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .track-item button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <div class="player-container">
+    <h1>Radio Bed Player</h1>
+    <div class="drop-area" id="dropArea">
+      <p>Drag and Drop your audio files here or use the Upload button.</p>
+      <input type="file" id="fileInput" accept="audio/*" multiple hidden>
+      <button id="uploadButton">Upload Audio</button>
+    </div>
+    <div class="track-list" id="trackList"></div>
+  </div>
+
+  <script>
+    const dropArea = document.getElementById('dropArea');
+    const fileInput = document.getElementById('fileInput');
+    const uploadButton = document.getElementById('uploadButton');
+    const trackList = document.getElementById('trackList');
+
+    const tracks = [];
+    const MAX_TRACKS = 3;
+
+    // Stop all tracks
+    function stopAllTracks() {
+      tracks.forEach(track => {
+        if (!track.audio.paused) {
+          track.audio.pause();
+          track.audio.currentTime = 0;
+        }
+      });
+    }
+
+    // Add track to the list
+    function addTrack(file) {
+      if (tracks.length >= MAX_TRACKS) {
+        alert('You can only load up to 3 tracks.');
+        return;
+      }
+
+      const audio = new Audio(URL.createObjectURL(file));
+      audio.controls = true;
+
+      const trackItem = document.createElement('div');
+      trackItem.className = 'track-item';
+
+      const stopButton = document.createElement('button');
+      stopButton.textContent = 'Stop';
+      stopButton.disabled = true;
+
+      stopButton.addEventListener('click', () => {
+        audio.pause();
+        audio.currentTime = 0;
+        stopButton.disabled = true;
+      });
+
+      audio.addEventListener('play', () => {
+        stopAllTracks();
+        stopButton.disabled = false;
+      });
+
+      audio.addEventListener('pause', () => {
+        stopButton.disabled = true;
+      });
+
+      trackItem.appendChild(audio);
+      trackItem.appendChild(stopButton);
+
+      trackList.appendChild(trackItem);
+
+      tracks.push({ audio, trackItem });
+
+      audio.addEventListener('ended', () => {
+        stopButton.disabled = true;
+      });
+    }
+
+    // Handle file upload
+    function handleFiles(files) {
+      for (const file of files) {
+        if (file.type.startsWith('audio/')) {
+          addTrack(file);
+        }
+      }
+    }
+
+    // Drag and drop events
+    dropArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropArea.classList.add('dragging');
+    });
+
+    dropArea.addEventListener('dragleave', () => {
+      dropArea.classList.remove('dragging');
+    });
+
+    dropArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropArea.classList.remove('dragging');
+      handleFiles(e.dataTransfer.files);
+    });
+
+    // Upload button click
+    uploadButton.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+  </script>
+</body>
+</html>
